@@ -14,6 +14,8 @@
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
+//  2018-09-11: Vulkan: Added QueuedFramesCount field in ImGui_ImplVulkan_InitInfo, required for initialization (was previously a hard #define IMGUI_VK_QUEUED_FRAMES 2).
+//  2018-09-11: Vulkan: Added ImGui_ImplVulkan_SetQueuedFramesCount() to override QueuedFramesCount while running.
 //  2018-08-25: Vulkan: Fixed mishandled VkSurfaceCapabilitiesKHR::maxImageCount=0 case.
 //  2018-06-22: Inverted the parameters to ImGui_ImplVulkan_RenderDrawData() to be consistent with other bindings.
 //  2018-06-08: Misc: Extracted imgui_impl_vulkan.cpp/.h away from the old combined GLFW+Vulkan example.
@@ -40,6 +42,7 @@ static uint32_t                     g_QueueFamily = (uint32_t)-1;
 static VkQueue                      g_Queue = VK_NULL_HANDLE;
 static VkPipelineCache              g_PipelineCache = VK_NULL_HANDLE;
 static VkDescriptorPool             g_DescriptorPool = VK_NULL_HANDLE;
+static int                          g_QueuedFramesCount = 0;
 static VkRenderPass                 g_RenderPass = VK_NULL_HANDLE;
 static void                         (*g_CheckVkResultFn)(VkResult err) = NULL;
 
@@ -60,9 +63,11 @@ struct FrameDataForRender
     VkDeviceSize    IndexBufferSize;
     VkBuffer        VertexBuffer;
     VkBuffer        IndexBuffer;
+
+    FrameDataForRender() { VertexBufferMemory = IndexBufferMemory = VK_NULL_HANDLE; VertexBufferSize = IndexBufferSize = VK_NULL_HANDLE; VertexBuffer = IndexBuffer = VK_NULL_HANDLE; }
 };
-static int                    g_FrameIndex = 0;
-static FrameDataForRender     g_FramesDataBuffers[IMGUI_VK_QUEUED_FRAMES] = {};
+static int                              g_FrameIndex = 0;
+static ImVector<FrameDataForRender>     g_FramesDataBuffers;
 
 // Font data
 static VkSampler              g_FontSampler = VK_NULL_HANDLE;
@@ -211,7 +216,7 @@ void ImGui_ImplVulkan_RenderDrawData(ImDrawData* draw_data, VkCommandBuffer comm
         return;
 
     FrameDataForRender* fd = &g_FramesDataBuffers[g_FrameIndex];
-    g_FrameIndex = (g_FrameIndex + 1) % IMGUI_VK_QUEUED_FRAMES;
+    g_FrameIndex = (g_FrameIndex + 1) % g_FramesDataBuffers.size();
 
     // Create the Vertex and Index buffers:
     size_t vertex_size = draw_data->TotalVtxCount * sizeof(ImDrawVert);
@@ -679,16 +684,6 @@ void    ImGui_ImplVulkan_InvalidateFontUploadObjects()
 void    ImGui_ImplVulkan_InvalidateDeviceObjects()
 {
     ImGui_ImplVulkan_InvalidateFontUploadObjects();
-
-    for (int i = 0; i < IMGUI_VK_QUEUED_FRAMES; i++)
-    {
-        FrameDataForRender* fd = &g_FramesDataBuffers[i];
-        if (fd->VertexBuffer)       { vkDestroyBuffer   (g_Device, fd->VertexBuffer,        g_Allocator); fd->VertexBuffer = VK_NULL_HANDLE; }
-        if (fd->VertexBufferMemory) { vkFreeMemory      (g_Device, fd->VertexBufferMemory,  g_Allocator); fd->VertexBufferMemory = VK_NULL_HANDLE; }
-        if (fd->IndexBuffer)        { vkDestroyBuffer   (g_Device, fd->IndexBuffer,         g_Allocator); fd->IndexBuffer = VK_NULL_HANDLE; }
-        if (fd->IndexBufferMemory)  { vkFreeMemory      (g_Device, fd->IndexBufferMemory,   g_Allocator); fd->IndexBufferMemory = VK_NULL_HANDLE; }
-    }
-
     if (g_FontView)             { vkDestroyImageView(g_Device, g_FontView, g_Allocator); g_FontView = VK_NULL_HANDLE; }
     if (g_FontImage)            { vkDestroyImage(g_Device, g_FontImage, g_Allocator); g_FontImage = VK_NULL_HANDLE; }
     if (g_FontMemory)           { vkFreeMemory(g_Device, g_FontMemory, g_Allocator); g_FontMemory = VK_NULL_HANDLE; }
@@ -698,6 +693,19 @@ void    ImGui_ImplVulkan_InvalidateDeviceObjects()
     if (g_Pipeline)             { vkDestroyPipeline(g_Device, g_Pipeline, g_Allocator); g_Pipeline = VK_NULL_HANDLE; }
 }
 
+void ImGui_ImplVulkan_InvalidateFrameDeviceObjects()
+{
+    for (int i = 0; i < g_FramesDataBuffers.size(); i++)
+    {
+        FrameDataForRender* fd = &g_FramesDataBuffers[i];
+        if (fd->VertexBuffer)       { vkDestroyBuffer(g_Device, fd->VertexBuffer, g_Allocator); fd->VertexBuffer = VK_NULL_HANDLE; }
+        if (fd->VertexBufferMemory) { vkFreeMemory(g_Device, fd->VertexBufferMemory, g_Allocator); fd->VertexBufferMemory = VK_NULL_HANDLE; }
+        if (fd->IndexBuffer)        { vkDestroyBuffer(g_Device, fd->IndexBuffer, g_Allocator); fd->IndexBuffer = VK_NULL_HANDLE; }
+        if (fd->IndexBufferMemory)  { vkFreeMemory(g_Device, fd->IndexBufferMemory, g_Allocator); fd->IndexBufferMemory = VK_NULL_HANDLE; }
+    }
+    g_FramesDataBuffers.clear();
+}
+
 bool    ImGui_ImplVulkan_Init(ImGui_ImplVulkan_InitInfo* info, VkRenderPass render_pass)
 {
     IM_ASSERT(info->Instance != VK_NULL_HANDLE);
@@ -705,6 +713,7 @@ bool    ImGui_ImplVulkan_Init(ImGui_ImplVulkan_InitInfo* info, VkRenderPass rend
     IM_ASSERT(info->Device != VK_NULL_HANDLE);
     IM_ASSERT(info->Queue != VK_NULL_HANDLE);
     IM_ASSERT(info->DescriptorPool != VK_NULL_HANDLE);
+    IM_ASSERT(info->QueuedFramesCount >= 2);
     IM_ASSERT(render_pass != VK_NULL_HANDLE);
 
     g_Instance = info->Instance;
@@ -715,8 +724,13 @@ bool    ImGui_ImplVulkan_Init(ImGui_ImplVulkan_InitInfo* info, VkRenderPass rend
     g_RenderPass = render_pass;
     g_PipelineCache = info->PipelineCache;
     g_DescriptorPool = info->DescriptorPool;
+    g_QueuedFramesCount = info->QueuedFramesCount;
     g_Allocator = info->Allocator;
     g_CheckVkResultFn = info->CheckVkResultFn;
+
+    g_FramesDataBuffers.reserve(info->QueuedFramesCount);
+    for (int i = 0; i < info->QueuedFramesCount; i++)
+        g_FramesDataBuffers.push_back(FrameDataForRender());
 
     ImGui_ImplVulkan_CreateDeviceObjects();
 
@@ -732,11 +746,24 @@ bool    ImGui_ImplVulkan_Init(ImGui_ImplVulkan_InitInfo* info, VkRenderPass rend
 void ImGui_ImplVulkan_Shutdown()
 {
     ImGui_ImplVulkan_ShutdownPlatformInterface();
+    ImGui_ImplVulkan_InvalidateFrameDeviceObjects();
     ImGui_ImplVulkan_InvalidateDeviceObjects();
 }
 
 void ImGui_ImplVulkan_NewFrame()
 {
+}
+
+void ImGui_ImplVulkan_SetQueuedFramesCount(int count)
+{
+    if (count == g_FramesDataBuffers.Size)
+        return;
+    ImGui_ImplVulkan_InvalidateFrameDeviceObjects();
+
+    g_FrameIndex = 0;
+    g_FramesDataBuffers.reserve(count);
+    for (int i = 0; i < count; i++)
+        g_FramesDataBuffers.push_back(FrameDataForRender());
 }
 
 
@@ -856,7 +883,7 @@ void ImGui_ImplVulkanH_CreateWindowDataCommandBuffers(VkPhysicalDevice physical_
 
     // Create Command Buffers
     VkResult err;
-    for (int i = 0; i < IMGUI_VK_QUEUED_FRAMES; i++)
+    for (int i = 0; i < wd->Frames.size(); i++)
     {
         ImGui_ImplVulkanH_FrameData* fd = &wd->Frames[i];
         {
@@ -906,10 +933,8 @@ int ImGui_ImplVulkanH_GetMinImageCountFromPresentMode(VkPresentModeKHR present_m
     return 1;
 }
 
-void ImGui_ImplVulkanH_CreateWindowDataSwapChainAndFramebuffer(VkPhysicalDevice physical_device, VkDevice device, ImGui_ImplVulkanH_WindowData* wd, const VkAllocationCallbacks* allocator, int w, int h)
+void ImGui_ImplVulkanH_CreateWindowDataSwapChainAndFramebuffer(VkPhysicalDevice physical_device, VkDevice device, ImGui_ImplVulkanH_WindowData* wd, const VkAllocationCallbacks* allocator, int w, int h, uint32_t min_image_count)
 {
-    uint32_t min_image_count = 2;	// FIXME: this should become a function parameter
-
     VkResult err;
     VkSwapchainKHR old_swapchain = wd->Swapchain;
     err = vkDeviceWaitIdle(device);
@@ -936,7 +961,7 @@ void ImGui_ImplVulkanH_CreateWindowDataSwapChainAndFramebuffer(VkPhysicalDevice 
         VkSwapchainCreateInfoKHR info = {};
         info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         info.surface = wd->Surface;
-		info.minImageCount = min_image_count;
+        info.minImageCount = min_image_count;
         info.imageFormat = wd->SurfaceFormat.format;
         info.imageColorSpace = wd->SurfaceFormat.colorSpace;
         info.imageArrayLayers = 1;
@@ -951,9 +976,9 @@ void ImGui_ImplVulkanH_CreateWindowDataSwapChainAndFramebuffer(VkPhysicalDevice 
         err = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, wd->Surface, &cap);
         check_vk_result(err);
         if (info.minImageCount < cap.minImageCount)
-			info.minImageCount = cap.minImageCount;
-		else if (cap.maxImageCount != 0 && info.minImageCount > cap.maxImageCount)
-			info.minImageCount = cap.maxImageCount;
+            info.minImageCount = cap.minImageCount;
+        else if (cap.maxImageCount != 0 && info.minImageCount > cap.maxImageCount)
+            info.minImageCount = cap.maxImageCount;
 
         if (cap.currentExtent.width == 0xffffffff)
         {
@@ -971,6 +996,14 @@ void ImGui_ImplVulkanH_CreateWindowDataSwapChainAndFramebuffer(VkPhysicalDevice 
         check_vk_result(err);
         err = vkGetSwapchainImagesKHR(device, wd->Swapchain, &wd->BackBufferCount, wd->BackBuffer);
         check_vk_result(err);
+
+        for (int i = 0; i < wd->Frames.Size; i++)
+            ImGui_ImplVulkanH_DestroyFrameData(g_Instance, device, &wd->Frames[i], allocator);
+        wd->Frames.clear();
+
+        wd->Frames.reserve((int)wd->BackBufferCount);
+        for (int i = 0; i < (int)wd->BackBufferCount; i++)
+            wd->Frames.push_back(ImGui_ImplVulkanH_FrameData());
     }
     if (old_swapchain)
         vkDestroySwapchainKHR(device, old_swapchain, allocator);
@@ -1057,14 +1090,10 @@ void ImGui_ImplVulkanH_DestroyWindowData(VkInstance instance, VkDevice device, I
     vkDeviceWaitIdle(device); // FIXME: We could wait on the Queue if we had the queue in wd-> (otherwise VulkanH functions can't use globals)
     //vkQueueWaitIdle(g_Queue);
 
-    for (int i = 0; i < IMGUI_VK_QUEUED_FRAMES; i++)
+    for (int i = 0; i < wd->Frames.size(); i++)
     {
         ImGui_ImplVulkanH_FrameData* fd = &wd->Frames[i];
-        vkDestroyFence(device, fd->Fence, allocator);
-        vkFreeCommandBuffers(device, fd->CommandPool, 1, &fd->CommandBuffer);
-        vkDestroyCommandPool(device, fd->CommandPool, allocator);
-        vkDestroySemaphore(device, fd->ImageAcquiredSemaphore, allocator);
-        vkDestroySemaphore(device, fd->RenderCompleteSemaphore, allocator);
+        ImGui_ImplVulkanH_DestroyFrameData(instance, device, fd, allocator);
     }
     for (uint32_t i = 0; i < wd->BackBufferCount; i++)
     {
@@ -1075,6 +1104,21 @@ void ImGui_ImplVulkanH_DestroyWindowData(VkInstance instance, VkDevice device, I
     vkDestroySwapchainKHR(device, wd->Swapchain, allocator);
     vkDestroySurfaceKHR(instance, wd->Surface, allocator);
     *wd = ImGui_ImplVulkanH_WindowData();
+}
+
+void ImGui_ImplVulkanH_DestroyFrameData(VkInstance instance, VkDevice device, ImGui_ImplVulkanH_FrameData* fd, const VkAllocationCallbacks* allocator)
+{
+    (void)instance;
+    vkDestroyFence(device, fd->Fence, allocator);
+    vkFreeCommandBuffers(device, fd->CommandPool, 1, &fd->CommandBuffer);
+    vkDestroyCommandPool(device, fd->CommandPool, allocator);
+    vkDestroySemaphore(device, fd->ImageAcquiredSemaphore, allocator);
+    vkDestroySemaphore(device, fd->RenderCompleteSemaphore, allocator);
+    fd->BackbufferIndex = 0;
+    fd->Fence = VK_NULL_HANDLE;
+    fd->CommandBuffer = VK_NULL_HANDLE;
+    fd->CommandPool = VK_NULL_HANDLE;
+    fd->ImageAcquiredSemaphore = fd->RenderCompleteSemaphore = VK_NULL_HANDLE;
 }
 
 //--------------------------------------------------------------------------------------------------------
@@ -1239,7 +1283,7 @@ static void ImGui_ImplVulkan_SwapBuffers(ImGuiViewport* viewport, void*)
     info.pImageIndices = &fd->BackbufferIndex;
     err = vkQueuePresentKHR(g_Queue, &info);
     check_vk_result(err);
-    wd->FrameIndex = (wd->FrameIndex + 1) % IMGUI_VK_QUEUED_FRAMES;
+    wd->FrameIndex = (wd->FrameIndex + 1) % g_QueuedFramesCount;
 }
 
 void ImGui_ImplVulkan_InitPlatformInterface()
