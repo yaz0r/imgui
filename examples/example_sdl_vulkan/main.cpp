@@ -299,17 +299,11 @@ static void FramePresent(ImGui_ImplVulkanH_WindowData* wd)
 
 static void RebuildSwapChain(int width, int height)
 {
-
 	ImGui_ImplVulkanH_CreateWindowDataSwapChainAndFramebuffer(g_PhysicalDevice, g_Device, &g_WindowData, g_Allocator, width, height, g_MinImageCount);
 	ImGui_ImplVulkanH_CreateWindowDataCommandBuffers(g_PhysicalDevice, g_Device, g_QueueFamily, &g_WindowData, g_Allocator);
 	ImGui_ImplVulkan_SetQueuedFramesCount(g_WindowData.BackBufferCount);
 	g_WindowData.FrameIndex = 0;
 	g_PendingSwapchainRebuild = false;
-}
-
-static void RebuildSwapChain()
-{
-	RebuildSwapChain(g_WindowData.Width, g_WindowData.Height);
 }
 
 int main(int, char**)
@@ -440,15 +434,11 @@ int main(int, char**)
             if (event.type == SDL_QUIT)
                 done = true;
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED && event.window.windowID == SDL_GetWindowID(window))
-            {
 				RebuildSwapChain((int)event.window.data1, (int)event.window.data2);
-            }
         }
 
 		if (g_PendingSwapchainRebuild)
-		{
-			RebuildSwapChain();
-		}
+			RebuildSwapChain(g_WindowData.Width, g_WindowData.Height);
 
         // Start the Dear ImGui frame
         ImGui_ImplVulkan_NewFrame();
