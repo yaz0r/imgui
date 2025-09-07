@@ -35,15 +35,9 @@ jobs:
           Expand-Archive -Path SDL3-devel-3.2.18-VC.zip
           echo "SDL3_DIR=$(pwd)\SDL3-devel-3.2.18-VC\SDL3-3.2.18\" >>${env:GITHUB_ENV}
 
-          Invoke-WebRequest -Uri "https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/v1.4.326.zip" -OutFile vulkan-loader-1.4.326.zip
-          Expand-Archive -Path vulkan-loader-1.4.326.zip
-          echo "VULKAN_LOADER=$(pwd)\vulkan-loader-1.4.326\" >>${env:GITHUB_ENV}
-
-          cmake -S $(pwd)\vulkan-loader-1.4.326\. -B $(pwd)\vulkan-loader-1.4.326\build -D UPDATE_DEPS=On
-
-          #Invoke-WebRequest -Uri "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.326.zip" -OutFile vulkan-headers-1.4.326.zip
-          #Expand-Archive -Path vulkan-headers-1.4.326.zip
-          #echo "VULKAN_HEADERS=$(pwd)\vulkan-headers-1.4.326\" >>${env:GITHUB_ENV}
+          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/1.4.309.0/windows/VulkanSDK-1.4.309.0-Installer.exe" -OutFile VulkanSDK-1.4.309.0-Installer.exe
+          Expand-Archive -Path VulkanSDK-1.4.309.0-Installer.exe
+          echo "VULKAN_LOADER=$(pwd)\VulkanSDK-1.4.309.0-Installer.exe\" >>${env:GITHUB_ENV}
 
       - name: Fix Projects
         shell: powershell
