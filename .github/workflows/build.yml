@@ -39,8 +39,7 @@ jobs:
           Expand-Archive -Path vulkan-loader-1.4.326.zip
           echo "VULKAN_LOADER=$(pwd)\vulkan-loader-1.4.326\" >>${env:GITHUB_ENV}
 
-          cd $(VULKAN_LOADER)
-          cmake -S . -B build -D UPDATE_DEPS=On
+          cmake -S $(pwd)\vulkan-loader-1.4.326\. -B $(pwd)\vulkan-loader-1.4.326\build -D UPDATE_DEPS=On
 
           #Invoke-WebRequest -Uri "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.326.zip" -OutFile vulkan-headers-1.4.326.zip
           #Expand-Archive -Path vulkan-headers-1.4.326.zip
