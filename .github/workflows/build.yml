@@ -35,9 +35,9 @@ jobs:
           Expand-Archive -Path SDL3-devel-3.2.18-VC.zip
           echo "SDL3_DIR=$(pwd)\SDL3-devel-3.2.18-VC\SDL3-3.2.18\" >>${env:GITHUB_ENV}
 
-          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/1.4.309.0/windows/VulkanSDK-1.4.309.0-Installer.exe" -OutFile VulkanSDK-1.4.309.0-Installer.exe
-          Expand-Archive -Path VulkanSDK-1.4.309.0-Installer.exe
-          echo "VULKAN_LOADER=$(pwd)\VulkanSDK-1.4.309.0-Installer.exe\" >>${env:GITHUB_ENV}
+          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/1.4.309.0/windows/VulkanSDK-1.4.309.0-Installer.exe" -OutFile VulkanSDK-1.4.309.0.zip
+          Expand-Archive -Path VulkanSDK-1.4.309.0.zip
+          echo "VULKAN_SDK=$(pwd)VulkanSDK-1.4.309.0\" >>${env:GITHUB_ENV}
 
       - name: Fix Projects
         shell: powershell
