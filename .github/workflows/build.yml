@@ -35,10 +35,10 @@ jobs:
           Expand-Archive -Path SDL3-devel-3.2.18-VC.zip
           echo "SDL3_DIR=$(pwd)\SDL3-devel-3.2.18-VC\SDL3-3.2.18\" >>${env:GITHUB_ENV}
 
-          Invoke-WebRequest -Uri "https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/v1.4.326.zip" -OutFile VulkanLoader-1.4.326.zip
-          Expand-Archive -Path VulkanLoader-1.4.326.zip
-          cmake -S VulkanLoader-1.4.326\VulkanLoader-1.4.326 -B VulkanLoader-build -D UPDATE_DEPS=On
-          echo "VULKAN_SDK=$(pwd)VulkanSDK-1.4.309.0\" >>${env:GITHUB_ENV}
+          Invoke-WebRequest -Uri "https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/v1.4.326.zip" -OutFile Vulkan-Loader-1.4.326.zip
+          Expand-Archive -Path Vulkan-Loader-1.4.326.zip
+          cmake -S Vulkan-Loader-1.4.326\Vulkan-Loader-1.4.326 -B VulkanLoader-build -D UPDATE_DEPS=On
+          echo "VULKAN_SDK=$(pwd)\VulkanLoader-build\" >>${env:GITHUB_ENV}
 
       - name: Fix Projects
         shell: powershell
