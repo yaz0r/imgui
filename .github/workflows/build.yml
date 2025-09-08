@@ -30,24 +30,30 @@ jobs:
           Invoke-WebRequest -Uri "https://www.libsdl.org/release/SDL2-devel-2.32.8-VC.zip" -OutFile "SDL2-devel-2.32.8-VC.zip"
           Expand-Archive -Path SDL2-devel-2.32.8-VC.zip
           echo "SDL2_DIR=$(pwd)\SDL2-devel-2.32.8-VC\SDL2-2.32.8\" >>${env:GITHUB_ENV}
-          
+
           Invoke-WebRequest -Uri "https://www.libsdl.org/release/SDL3-devel-3.2.18-VC.zip" -OutFile "SDL3-devel-3.2.18-VC.zip"
           Expand-Archive -Path SDL3-devel-3.2.18-VC.zip
           echo "SDL3_DIR=$(pwd)\SDL3-devel-3.2.18-VC\SDL3-3.2.18\" >>${env:GITHUB_ENV}
 
-          Invoke-WebRequest -Uri "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.326.zip" -OutFile Vulkan-Headers-1.4.326.zip
-          Expand-Archive -Path Vulkan-Headers-1.4.326.zip
-          echo "VULKAN_SDK=$(pwd)\Vulkan-Headers-1.4.326\Vulkan-Headers-1.4.326" >>${env:GITHUB_ENV}
-          dir Vulkan-Headers-1.4.326\Vulkan-Headers-1.4.326 -r 
+          # retrieve the miniaml bits of the vulkan sdk
+          $vulkan-version = "1.4.326"
 
-          Invoke-WebRequest -Uri "https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/v1.4.326.zip" -OutFile Vulkan-Loader-1.4.326.zip
-          Expand-Archive -Path Vulkan-Loader-1.4.326.zip
-          cmake -S Vulkan-Loader-1.4.326\Vulkan-Loader-1.4.326 -B VulkanLoader-build -D UPDATE_DEPS=On
+          # get the vulkan headers
+          Invoke-WebRequest -Uri "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v$($vulkan-version).zip" -OutFile Vulkan-Headers-$($vulkan-version).zip
+          Expand-Archive -Path Vulkan-Headers-$($vulkan-version).zip
+          echo "VULKAN_SDK=$(pwd)\Vulkan-Headers-$($vulkan-version)\Vulkan-Headers-$($vulkan-version)" >>${env:GITHUB_ENV}
+
+          # get the vulkan loader source code
+          Invoke-WebRequest -Uri "https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/v$($vulkan-version).zip" -OutFile Vulkan-Loader-$($vulkan-version).zip
+          Expand-Archive -Path Vulkan-Loader-$($vulkan-version).zip
+
+          # build the vulkan loader, UPDATE_DEPS=On will make it automatically fetch its dependencies
+          cmake -S Vulkan-Loader-$($vulkan-version)\Vulkan-Loader-$($vulkan-version) -B VulkanLoader-build -D UPDATE_DEPS=On
           cmake --build VulkanLoader-build
-          dir VulkanLoader-build -r 
 
-          mkdir Vulkan-Headers-1.4.326\Vulkan-Headers-1.4.326\Lib
-          copy VulkanLoader-build\loader\Debug\vulkan-1.* Vulkan-Headers-1.4.326\Vulkan-Headers-1.4.326\Lib\
+          # copy the built lib/dll to the expected place
+          mkdir Vulkan-Headers-$($vulkan-version)\Vulkan-Headers-$($vulkan-version)\Lib
+          copy VulkanLoader-build\loader\Debug\vulkan-1.* Vulkan-Headers-$($vulkan-version)\Vulkan-Headers-$($vulkan-version)\Lib\
 
       - name: Fix Projects
         shell: powershell
