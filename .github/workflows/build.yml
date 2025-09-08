@@ -37,7 +37,7 @@ jobs:
 
           Invoke-WebRequest -Uri "https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/v1.4.326.zip" -OutFile VulkanLoader-1.4.326.zip
           Expand-Archive -Path VulkanLoader-1.4.326.zip
-          cmake -S VulkanLoader-1.4.326 -B VulkanLoader-build -D UPDATE_DEPS=On
+          cmake -S VulkanLoader-1.4.326\VulkanLoader-1.4.326 -B VulkanLoader-build -D UPDATE_DEPS=On
           echo "VULKAN_SDK=$(pwd)VulkanSDK-1.4.309.0\" >>${env:GITHUB_ENV}
 
       - name: Fix Projects
