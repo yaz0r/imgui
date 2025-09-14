@@ -11,14 +11,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Preapare output folder
+        shell: powershell
+        run: mkdir vulkanArtifact
+        
       - name: Install Dependencies
         shell: powershell
         run: |
           # VulkanSDK (retrieve minimal bits of the SDK from git)
           $vulkanVersion = "1.4.326"
-          # 1. Create the output folder where we will store all the outputs
-          mkdir vulkanArtifact
-          
+
           # 2. Get the vulkan headers and copy to output artifact folder
           Invoke-WebRequest -Uri "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v$($vulkanVersion).zip" -OutFile Vulkan-Headers-$($vulkanVersion).zip
           Expand-Archive -Path Vulkan-Headers-$($vulkanVersion).zip
