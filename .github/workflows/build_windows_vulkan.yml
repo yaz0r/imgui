@@ -44,7 +44,7 @@ jobs:
         run: |
           # (UPDATE_DEPS=On will make it automatically fetch its dependencies)
           cmake -S Vulkan-Loader-$($env:VULKAN_TAG)\Vulkan-Loader-$($env:VULKAN_TAG) -B VulkanLoader-build32 -D UPDATE_DEPS=On -A Win32
-          cmake --build $(pwd)\VulkanLoader-build32
+          cmake --build VulkanLoader-build32
           mkdir vulkanArtifact\Lib32
           copy VulkanLoader-build32\loader\Debug\vulkan-1.* vulkanArtifact\Lib32
 
