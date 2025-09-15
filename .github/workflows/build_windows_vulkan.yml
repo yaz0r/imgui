@@ -22,7 +22,7 @@ jobs:
 
       - name: Copy Vulkan Headers to artifact folder
         shell: powershell
-        run: cp -R Vulkan-Headers-$($env:VULKAN_TAG)\Vulkan-Headers-$($env:VULKAN_TAG)\* vulkanArtifact
+        run: cp -R Vulkan-Headers-$($env:VULKAN_TAG)\Vulkan-Headers-$($env:VULKAN_TAG)\include vulkanArtifact
 
       - name: Download Vulkan Loader
         shell: powershell
