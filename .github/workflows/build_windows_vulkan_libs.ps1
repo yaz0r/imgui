@@ -11,7 +11,7 @@ Expand-Archive -Path Vulkan-Headers-$($env:VULKAN_TAG).zip
 
 # Copy Vulkan Headers to artifact folder
 
-cp -R Vulkan-Headers-$($env:VULKAN_TAG)\Vulkan-Headers-$($env:VULKAN_TAG)\include vulkanArtifact
+cp -R Vulkan-Headers-$($env:VULKAN_TAG)\Vulkan-Headers-$($env:VULKAN_TAG)\include vulkanArtifact\Include
 
 # Download Vulkan Loader
 
