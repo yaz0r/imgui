@@ -19,11 +19,11 @@ Expand-Archive -Path Vulkan-Loader-$($env:VULKAN_TAG).zip
 cmake -S Vulkan-Loader-$($env:VULKAN_TAG)\Vulkan-Loader-$($env:VULKAN_TAG) -B VulkanLoader-build64 -D UPDATE_DEPS=On -A x64
 cmake --build VulkanLoader-build64
 mkdir vulkanArtifact\Lib
-copy VulkanLoader-build64\loader\Debug\vulkan-1.* vulkanArtifact\Lib
+copy VulkanLoader-build64\loader\Debug\vulkan-1.lib vulkanArtifact\Lib
 
 # Build Vulkan Loader win32
 
 cmake -S Vulkan-Loader-$($env:VULKAN_TAG)\Vulkan-Loader-$($env:VULKAN_TAG) -B VulkanLoader-build32 -D UPDATE_DEPS=On -A Win32
 cmake --build VulkanLoader-build32
 mkdir vulkanArtifact\Lib32
-copy VulkanLoader-build32\loader\Debug\vulkan-1.* vulkanArtifact\Lib32
+copy VulkanLoader-build32\loader\Debug\vulkan-1.lib vulkanArtifact\Lib32
