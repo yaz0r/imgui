@@ -14,39 +14,9 @@ jobs:
         shell: powershell
         run: mkdir vulkanArtifact
 
-      - name: Download Vulkan Headers
+      - name: Build Vulkan libs
         shell: powershell
-        run: |
-          Invoke-WebRequest -Uri "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v$($env:VULKAN_TAG).zip" -OutFile Vulkan-Headers-$($env:VULKAN_TAG).zip
-          Expand-Archive -Path Vulkan-Headers-$($env:VULKAN_TAG).zip
-
-      - name: Copy Vulkan Headers to artifact folder
-        shell: powershell
-        run: cp -R Vulkan-Headers-$($env:VULKAN_TAG)\Vulkan-Headers-$($env:VULKAN_TAG)\include vulkanArtifact
-
-      - name: Download Vulkan Loader
-        shell: powershell
-        run: |
-          Invoke-WebRequest -Uri "https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/v$($env:VULKAN_TAG).zip" -OutFile Vulkan-Loader-$($env:VULKAN_TAG).zip
-          Expand-Archive -Path Vulkan-Loader-$($env:VULKAN_TAG).zip
-
-      - name: Build Vulkan Loader x64
-        shell: powershell
-        run: |
-          # (UPDATE_DEPS=On will make it automatically fetch its dependencies)
-          cmake -S Vulkan-Loader-$($env:VULKAN_TAG)\Vulkan-Loader-$($env:VULKAN_TAG) -B VulkanLoader-build64 -D UPDATE_DEPS=On -A x64
-          cmake --build VulkanLoader-build64
-          mkdir vulkanArtifact\Lib
-          copy VulkanLoader-build64\loader\Debug\vulkan-1.* vulkanArtifact\Lib
-
-      - name: Build Vulkan Loader Win32
-        shell: powershell
-        run: |
-          # (UPDATE_DEPS=On will make it automatically fetch its dependencies)
-          cmake -S Vulkan-Loader-$($env:VULKAN_TAG)\Vulkan-Loader-$($env:VULKAN_TAG) -B VulkanLoader-build32 -D UPDATE_DEPS=On -A Win32
-          cmake --build VulkanLoader-build32
-          mkdir vulkanArtifact\Lib32
-          copy VulkanLoader-build32\loader\Debug\vulkan-1.* vulkanArtifact\Lib32
+        run: .github/workflows/build_windows_vulkan.ps1
 
       - uses: actions/upload-artifact@v4
         with:
