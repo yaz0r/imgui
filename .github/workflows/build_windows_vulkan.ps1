@@ -1,3 +1,4 @@
+# Set default vulkan version if none provided
 if (-not $env:VULKAN_TAG) { $env:VULKAN_TAG = "1.4.326" }
 
 # Create output folder
