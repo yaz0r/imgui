@@ -38,6 +38,7 @@ jobs:
       - uses: actions/download-artifact@v5
         with:
           name: vulkan_windows_artifact
+          github-token: ${{ secrets.GH_PAT }} # token with actions:read permissions on target repo
       - name: Display structure of downloaded files
         run: ls -R
         
