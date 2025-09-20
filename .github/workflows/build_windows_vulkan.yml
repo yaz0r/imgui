@@ -10,10 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prepare output folder
-        shell: powershell
-        run: mkdir vulkanArtifact
-
       - name: Build Vulkan libs
         shell: powershell
         run: .github/workflows/build_windows_vulkan.ps1
