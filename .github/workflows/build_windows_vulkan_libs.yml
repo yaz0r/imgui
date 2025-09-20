@@ -1,4 +1,4 @@
-name: build-windows-vulkan-artifact
+name: build-windows-vulkan-libs
 
 on: workflow_dispatch
 
