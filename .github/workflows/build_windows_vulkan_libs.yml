@@ -12,7 +12,7 @@ jobs:
 
       - name: Build Vulkan libs
         shell: powershell
-        run: .github/workflows/build_windows_vulkan.ps1
+        run: .github/workflows/build_windows_vulkan_libs.ps1
 
       - uses: actions/upload-artifact@v4
         with:
